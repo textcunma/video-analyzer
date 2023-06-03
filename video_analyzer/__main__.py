@@ -7,8 +7,6 @@ import yaml
 import argparse
 
 from utils import update_args
-from analyze import analyze_main
-from downloader.download import Download
 
 parser = argparse.ArgumentParser(description="コマンドライン引数")
 parser.add_argument("--download_flg", action="store_false", help="ダウンロードするかのフラグ")
@@ -34,9 +32,3 @@ update_args(options_yaml, vars(args))
 # 無名関数
 # 型判定
 # 高速化
-
-if args.download_flg:
-    for url in range(args.download_url):
-        Download(url, args.save_dir)
-
-analyze_main(args)
