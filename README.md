@@ -1,9 +1,8 @@
-# movie-analyzer
+# video-analyzer
 指定した動画を分析するプログラム
 
 ## 概要
 指定した動画(ローカル、インターネット)を画像処理によって分析
-
 
 ## 内容
 
@@ -37,5 +36,5 @@ conda env export --no-builds > env.yml
 
 ## Anaconda環境生成
 ```
-conda env create --file env.yaml
+conda env create --file env.yml
 ```
