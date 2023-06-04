@@ -1,25 +1,26 @@
 import os
 import cv2
+import time
 import numpy as np
 from yt_dlp import YoutubeDL
 
 
-class VideoProcessor:
-    """映像に関する処理をするクラス"""
+class KeyframeExtractor:
+    """映像のキーフレーム抽出のクラス"""
 
-    def __init__(self, video_name: str, video_path: str) -> None:
+    def __init__(self, video_path: str) -> None:
         """イニシャライザ（インスタンスの初期化）
         Args:
-            video_name (str): 映像ファイル名
             video_path (str): 映像ファイルのパス名
         """
-        self._video_name = video_name
         self._video_path = video_path
+        self._video_name = os.path.splitext(os.path.basename(video_path))[0].split('/')[-1]
         self._synth_frame_columns = 6   # 合成画像の列数
         self._new_w = 0  # リサイズ後の幅
         self._new_h = 0  # リサイズ後の高さ
-        self._resize_ratio = 0.4
         self._keyframes_num = 0
+        self._resize_ratio = 0.4
+        self._resize_frame = lambda img: cv2.resize(img, (self._new_w, self._new_h))    # [NEW] 無名関数
 
     def _load_video(self) -> cv2.VideoCapture:
         """OpenCVライブラリを用いて映像を読み込む
@@ -36,10 +37,6 @@ class VideoProcessor:
         self._new_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) * self._resize_ratio)
         self._new_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) * self._resize_ratio)
         return cap
-
-    def _resize_frame(self, img: np.ndarray) -> np.ndarray:
-        """画像を拡大縮小"""
-        return cv2.resize(img, (self._new_w, self._new_h))
 
     def _calc_hist(self, img: np.ndarray) -> np.ndarray:
         """ヒストグラムを計算
@@ -90,8 +87,20 @@ class VideoProcessor:
         cap.release()
         yield keyframes
 
+    @staticmethod
+    def _print_time(func):      # [NEW] デコレーター、スタティックメソッド
+        """デコレーター：ログ出力"""
+        def wrapper(*args, **kargs):
+            start = time.time()
+            func(*args, **kargs)
+            end = time.time()
+            print('処理時間：'+str(round(end-start,2)) + "[s]")
+        return wrapper
+
+    @_print_time
     def generate_synth_keyframe(self) -> None:
         """合成キーフレーム画像を生成"""
+        print('generate synthesized keyframe')
         synth_img = None
         for frames in self._extract_keyframes():
             if synth_img is None:
@@ -110,29 +119,37 @@ class VideoProcessor:
         cv2.imwrite(self._video_name + ".jpg", synth_img)
 
 
-class VideoDownloader(VideoProcessor):
-    def __init__(self, video_url: str, save_dir: str) -> None:
+class VideoDownloader(KeyframeExtractor):
+    save_dir = ""   # [NEW] クラス変数
+
+    def __init__(self, video_url: str) -> None:
         """
         Args:
             video_url (str): ダウンロードしたい映像ファイルのurl
-            save_dir (str): 保存先ディレクトリ
         """
-
         video_name = video_url.split("/")[-1]
-        video_path = save_dir + video_name + ".mp4"
+        video_path = self.save_dir + video_name + ".mp4"
 
-        # 保存ディレクトリ作成
-        os.makedirs(save_dir, exist_ok=True)
+        super().__init__(video_path)  # 親クラスのイニシャライザをオーバーライド
+        self._video_url = video_url     # [NEW] インスタンス変数
 
-        super().__init__(video_name, video_path)  # 親クラスのイニシャライザをオーバーライド
-        self._video_url = video_url
-
+    @KeyframeExtractor._print_time
     def __call__(self) -> None:
         if not os.path.exists(self._video_path):
             ydl_opts = {"format": "best", "outtmpl": self._video_path}  # 親クラスの変数を使用
             with YoutubeDL(ydl_opts) as ydl:
                 ydl.download([self._video_url])
+        else:
+            print('Download : already completed')
 
+    @classmethod    # [NEW] クラスメソッド
+    def set_save_dir(cls, save_dir) -> None:
+        """保存先ディレクトリの設定と作成
+        Args:
+            save_dir (str): 保存先ディレクトリ
+        """
+        cls.save_dir = save_dir
+        os.makedirs(save_dir, exist_ok=True)
 
 # テスト用コード
 if __name__ == "__main__":
@@ -143,11 +160,14 @@ if __name__ == "__main__":
         "--save_dir", type=str, default="./videos/", help="ダウンロードしたファイルを保存するディレクトリ"
     )
     parser.add_argument(
-        "--video_url", default=("https://youtu.be/lgKjhlmTqek",), help="ダウンロードしたい動画のURL"
+        "--video_urls", default=("https://youtu.be/lgKjhlmTqek",), help="ダウンロードしたい動画のURL"
     )
     args = parser.parse_args()
 
-    for url in args.video_url:
-        vd = VideoDownloader(url, args.save_dir)
+    # 保存先を登録
+    VideoDownloader.set_save_dir(args.save_dir)
+
+    for url in args.video_urls:
+        vd = VideoDownloader(url)
         vd()
         vd.generate_synth_keyframe()
