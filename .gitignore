@@ -1,6 +1,7 @@
 .idea
 *.mp4
-
+videos
+*.jpg
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
