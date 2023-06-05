@@ -46,7 +46,6 @@ class KeyframeExtractor:
         Returns:
             hist (ndarray): ヒストグラム(1チャンネル)6
         """
-        img = self._resize_frame(img)
         hist = cv2.calcHist([img], [0], None, [256], [0, 256])
         hist = cv2.normalize(hist, hist).flatten()
         return hist
@@ -64,6 +63,7 @@ class KeyframeExtractor:
         keyframes = []
 
         ret, frame = cap.read()
+        frame = self._resize_frame(frame)
         keyframes.append(frame)  # 1フレーム目は必ずキーれフレーム
         self._keyframes_num += 1
         prev_hist = self._calc_hist(frame)
@@ -72,6 +72,7 @@ class KeyframeExtractor:
             ret, frame = cap.read()
             if not ret:
                 break
+            frame = self._resize_frame(frame)
             cur_hist = self._calc_hist(frame)
             hist_diff = cv2.compareHist(prev_hist, cur_hist, cv2.HISTCMP_BHATTACHARYYA)
 
@@ -88,19 +89,22 @@ class KeyframeExtractor:
         yield keyframes
 
     @staticmethod
-    def _print_time(func):      # [NEW] デコレーター、スタティックメソッド
-        """デコレーター：ログ出力"""
-        def wrapper(*args, **kargs):
-            start = time.time()
-            func(*args, **kargs)
-            end = time.time()
-            print('処理時間：'+str(round(end-start,2)) + "[s]")
-        return wrapper
+    def _print_time_arg(process_name: str) -> None:
+        def _print_time(func):      # [NEW] デコレーター、スタティックメソッド
+            """デコレーター：ログ出力"""
+            def wrapper(*args, **kargs):
+                start = time.time()
+                func(*args, **kargs)
+                end = time.time()
+                print(f'{process_name}:処理時間：{str(round(end-start,2))}[s]')
+            return wrapper
 
-    @_print_time
+        return _print_time
+
+    @_print_time_arg("extract-keyframe")
     def generate_synth_keyframe(self) -> None:
         """合成キーフレーム画像を生成"""
-        print('generate synthesized keyframe')
+        print(f'generate synthesized keyframe:{self._video_path}')
         synth_img = None
         for frames in self._extract_keyframes():
             if synth_img is None:
@@ -114,7 +118,12 @@ class KeyframeExtractor:
                         np.zeros((self._new_h, self._new_w, 3), dtype=np.uint8)
                         for _ in range(self._synth_frame_columns - len(frames))
                     ]
-                synth_img = cv2.vconcat([synth_img, cv2.hconcat(frames)])
+
+                try:
+                    synth_img = cv2.vconcat([synth_img, cv2.hconcat(frames)])
+                except:
+                    print("Error: Concat Image")
+
 
         cv2.imwrite(self._video_name + ".jpg", synth_img)
 
@@ -133,7 +142,7 @@ class VideoDownloader(KeyframeExtractor):
         super().__init__(video_path)  # 親クラスのイニシャライザをオーバーライド
         self._video_url = video_url     # [NEW] インスタンス変数
 
-    @KeyframeExtractor._print_time
+    @KeyframeExtractor._print_time_arg('download video')
     def __call__(self) -> None:
         if not os.path.exists(self._video_path):
             ydl_opts = {"format": "best", "outtmpl": self._video_path}  # 親クラスの変数を使用
@@ -151,6 +160,23 @@ class VideoDownloader(KeyframeExtractor):
         cls.save_dir = save_dir
         os.makedirs(save_dir, exist_ok=True)
 
+def analyze_net_video(url: str) -> None:
+    """インターネットにある映像を分析
+    Args:
+        url (str): インターネットにある映像のurl
+    """
+    vd = VideoDownloader(url)
+    vd()
+    vd.generate_synth_keyframe()
+
+def analyze_local_video(path: str) -> None:
+    """ローカルにある映像を分析
+    Args:
+        path (str): ローカルにある映像のパス
+    """
+    ke = KeyframeExtractor(path)
+    ke.generate_synth_keyframe()
+
 # テスト用コード
 if __name__ == "__main__":
     import argparse
@@ -160,7 +186,7 @@ if __name__ == "__main__":
         "--save_dir", type=str, default="./videos/", help="ダウンロードしたファイルを保存するディレクトリ"
     )
     parser.add_argument(
-        "--video_urls", default=("https://youtu.be/lgKjhlmTqek",), help="ダウンロードしたい動画のURL"
+        "--video_urls", default=("https://youtu.be/DCfk7tc_KqE",), help="ダウンロードしたい動画のURL"
     )
     args = parser.parse_args()
 
@@ -168,6 +194,4 @@ if __name__ == "__main__":
     VideoDownloader.set_save_dir(args.save_dir)
 
     for url in args.video_urls:
-        vd = VideoDownloader(url)
-        vd()
-        vd.generate_synth_keyframe()
+        analyze_net_video(url)
