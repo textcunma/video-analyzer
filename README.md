@@ -6,11 +6,14 @@
 
 ## 内容
 
-* 並列処理
+* 並行処理、並列処理
 * 無名関数
 * 型判定
 * 高速化
-* テスト
+* ユニットテスト
+
+SphinxでPython docstringからドキュメントを自動生成する
+
 
 ## ライブラリ
 * mypy
@@ -24,7 +27,12 @@ conda activate movie-analyzer
 
 ## コード整形
 ```
-python -m black {source_file_or_directory}
+python -m black video_analyzer
+```
+
+## コード型チェック
+```
+mupy {file name}
 ```
 
 ## Anaconda環境出力

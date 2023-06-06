@@ -1,6 +1,6 @@
-from typing import Any
-from typing import Dict
+import time
 
+from typing import Any, Dict, Callable
 
 def update_args(dict_from: Dict[str, Any], dict_to: Dict[str, Any]) -> None:
     """ymlファイルの内容に更新
@@ -17,3 +17,44 @@ def update_args(dict_from: Dict[str, Any], dict_to: Dict[str, Any]) -> None:
             update_args(dict_from[key], dict_to[key])
         elif value is not None:
             dict_to[key] = dict_from[key]
+
+
+def print_time(func):
+    """デコレーター：ログ出力"""
+
+    def wrapper(*args, **kargs):
+        start = time.time()
+        func(*args, **kargs)
+        end = time.time()
+        print(f"処理時間：{str(round(end - start, 2))}[s]")
+
+    return wrapper
+
+
+def print_time_arg(process_name: str) -> Callable[[Callable[..., None]], Callable[..., None]]:
+    """引数のあるデコレーター"""
+
+    def _print_time(func: Callable[..., None]) -> Callable[..., None]:
+        def wrapper(*args, **kargs):
+            start = time.time()
+            func(*args, **kargs)
+            end = time.time()
+            print(f"{process_name}:処理時間：{str(round(end-start,2))}[s]")
+
+        return wrapper
+
+    return _print_time
+
+def print_time_arg_return(process_name: str) -> Callable[[Callable[..., None]], Callable[..., None]]:
+    """引数のあるデコレーター"""
+    def _print_time(func: Callable[..., None]) -> Callable[..., None]:
+        def wrapper(*args, **kargs):
+            start = time.time()
+            output = func(*args, **kargs)
+            end = time.time()
+            print(f"{process_name}:処理時間：{str(round(end-start,2))}[s]")
+            return output
+
+        return wrapper
+
+    return _print_time

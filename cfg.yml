@@ -1,6 +1,6 @@
 # 引数を指定
 
-download_flg: False
+download_flg: True
 video_urls: ['https://youtu.be/R9JBN_x9zFQ', 'https://youtu.be/lgKjhlmTqek', 'https://youtu.be/DCfk7tc_KqE', 'https://youtu.be/qNYcwbEL-pg']
 video_paths: ['./videos/DCfk7tc_KqE.mp4', './videos/DCfk7tc_KqE.mp4', './videos/qNYcwbEL-pg.mp4', './videos/qNYcwbEL-pg.mp4']
 
