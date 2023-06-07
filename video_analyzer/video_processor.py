@@ -2,9 +2,10 @@ import os
 import cv2
 import requests
 import numpy as np
-
-from typing import Generator, Any
 import numpy.typing as npt
+
+from numba import jit
+from typing import Generator
 from yt_dlp import YoutubeDL
 from utils import print_time_arg, print_time_arg_return
 
@@ -46,6 +47,7 @@ class KeyframeExtractor:
         self._new_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) * self._resize_ratio)
         return cap
 
+    @jit(fastmath=True, nogil=True, nopython=True)
     def _calc_hist(self, img: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """ヒストグラムを計算
         Args:
@@ -58,6 +60,7 @@ class KeyframeExtractor:
         hist = cv2.normalize(hist, hist).flatten()
         return hist
 
+    @jit(fastmath=True, nogil=True, nopython=True)
     def _extract_keyframes(self, threshold: float = 0.5) -> Generator:
         """ヒストグラムを用いたキーフレーム抽出
         ヒストグラム差分を計算し、その差分がしきい値以上ならばキーフレームとする
@@ -96,6 +99,7 @@ class KeyframeExtractor:
         cap.release()
         yield keyframes
 
+    @jit(fastmath=True, nogil=True, nopython=True)
     @print_time_arg("extract-keyframe")  # [NEW] デコレーター
     def generate_synth_keyframe(self) -> None:
         """合成キーフレーム画像を生成"""

@@ -46,7 +46,7 @@ def print_time_arg(process_name: str) -> Callable[[Callable[..., None]], Callabl
     return _print_time
 
 def print_time_arg_return(process_name: str) -> Callable[[Callable[..., None]], Callable[..., None]]:
-    """引数のあるデコレーター"""
+    """引数・出力のあるデコレーター"""
     def _print_time(func: Callable[..., None]) -> Callable[..., None]:
         def wrapper(*args, **kargs):
             start = time.time()
