@@ -1,6 +1,6 @@
 import os
 import cv2
-import requests
+import yt_dlp
 import numpy as np
 import numpy.typing as npt
 
@@ -109,13 +109,10 @@ class KeyframeExtractor:
             else:
                 if len(frames) != self._synth_frame_columns:
                     # [NEW]　内包表記
-                    for _ in range(self._synth_frame_columns - len(frames)):
-                        frames.append(np.zeros((self._new_h, self._new_w, 3), dtype=np.uint8))
-                    # frames += [
-                    #     np.zeros((self._new_h, self._new_w, 3), dtype=np.uint8)
-                    #     for _ in range(self._synth_frame_columns - len(frames))
-                    # ]
-
+                    frames += [
+                        np.zeros((self._new_h, self._new_w, 3), dtype=np.uint8)
+                        for _ in range(self._synth_frame_columns - len(frames))
+                    ]
                 try:
                     synth_img = cv2.vconcat([synth_img, cv2.hconcat(frames)])
                 except:
@@ -146,7 +143,11 @@ class VideoDownloader(KeyframeExtractor):
 
             ydl_opts = {"format": "best", "outtmpl": self._video_path}  # 親クラスの変数を使用
             with YoutubeDL(ydl_opts) as ydl:
-                ydl.download([self._video_url])
+                try:
+                    ydl.download([self._video_url])
+                except yt_dlp.utils.DownloadError:
+                    print("don't exist videos")
+                    return False
         else:
             print("Download : already completed")
 
@@ -154,20 +155,15 @@ class VideoDownloader(KeyframeExtractor):
 
     @staticmethod  # [NEW] スタティックメソッド
     def is_valid_link(url: str) -> bool:
-        """URLが存在するかを確認
+        """YouTubeのURLかどうかを確認
         Args:
             url (str): ダウンロードしたい動画のurl
         """
         # YouTube動画のみダウンロード可能
         if not url.startswith("https://youtu.be"):
-            return False        
-        try:
-            response = requests.head(url)
-            if response.status_code != 303:
-                raise requests.ConnectionError
-            return True
-        except requests.ConnectionError:
             return False
+        else:
+            return True
 
     @classmethod  # [NEW] クラスメソッド
     def set_save_dir(cls, save_dir: str) -> None:
