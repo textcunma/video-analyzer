@@ -4,11 +4,9 @@ import requests
 import numpy as np
 import numpy.typing as npt
 
-from numba import jit
 from typing import Generator
 from yt_dlp import YoutubeDL
 from utils import print_time_arg, print_time_arg_return
-
 
 class KeyframeExtractor:
     """映像のキーフレーム抽出のクラス"""
@@ -47,7 +45,6 @@ class KeyframeExtractor:
         self._new_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) * self._resize_ratio)
         return cap
 
-    @jit(fastmath=True, nogil=True, nopython=True)
     def _calc_hist(self, img: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
         """ヒストグラムを計算
         Args:
@@ -60,7 +57,6 @@ class KeyframeExtractor:
         hist = cv2.normalize(hist, hist).flatten()
         return hist
 
-    @jit(fastmath=True, nogil=True, nopython=True)
     def _extract_keyframes(self, threshold: float = 0.5) -> Generator:
         """ヒストグラムを用いたキーフレーム抽出
         ヒストグラム差分を計算し、その差分がしきい値以上ならばキーフレームとする
@@ -99,7 +95,7 @@ class KeyframeExtractor:
         cap.release()
         yield keyframes
 
-    @jit(fastmath=True, nogil=True, nopython=True)
+
     @print_time_arg("extract-keyframe")  # [NEW] デコレーター
     def generate_synth_keyframe(self) -> None:
         """合成キーフレーム画像を生成"""
@@ -113,10 +109,12 @@ class KeyframeExtractor:
             else:
                 if len(frames) != self._synth_frame_columns:
                     # [NEW]　内包表記
-                    frames += [
-                        np.zeros((self._new_h, self._new_w, 3), dtype=np.uint8)
-                        for _ in range(self._synth_frame_columns - len(frames))
-                    ]
+                    for _ in range(self._synth_frame_columns - len(frames)):
+                        frames.append(np.zeros((self._new_h, self._new_w, 3), dtype=np.uint8))
+                    # frames += [
+                    #     np.zeros((self._new_h, self._new_w, 3), dtype=np.uint8)
+                    #     for _ in range(self._synth_frame_columns - len(frames))
+                    # ]
 
                 try:
                     synth_img = cv2.vconcat([synth_img, cv2.hconcat(frames)])
@@ -172,7 +170,7 @@ class VideoDownloader(KeyframeExtractor):
             return False
 
     @classmethod  # [NEW] クラスメソッド
-    def set_save_dir(cls, save_dir) -> None:
+    def set_save_dir(cls, save_dir: str) -> None:
         """保存先ディレクトリの設定と作成
         Args:
             save_dir (str): 保存先ディレクトリ

@@ -18,8 +18,8 @@ SphinxでPython docstringからドキュメントを自動生成する
 ## ライブラリ
 * mypy
 * black
-* Numba
-
+* Numba　-> 継承クラス、ジェネレーターがある場合、使えない
+* Codon -> NumpyやCV2などはコンパイルできない
 ## 仮想環境
 ```
 conda activate movie-analyzer
@@ -43,4 +43,9 @@ conda env export --no-builds > env.yml
 ## Anaconda環境生成
 ```
 conda env create --file env.yml
+```
+
+## プロファイラ cProfile
+```
+python -m cProfile {file path}
 ```
