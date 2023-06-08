@@ -7,23 +7,23 @@ import argparse
 
 from utils import update_args, print_time
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from video_processor import VideoDownloader, analyze_net_video, analyze_local_video
+from video_processor import VideoDownloader, analyze_video
 
 parser = argparse.ArgumentParser(description="コマンドライン引数")
 parser.add_argument("--download_flg", action="store_false", help="ダウンロードするかのフラグ")
 parser.add_argument("--video_urls", nargs="*", type=str, help="ダウンロードしたい動画のURL")
 parser.add_argument("--video_paths", nargs="*", type=str, help="ダウンロードしたい動画のURL")
 parser.add_argument(
-    "--save_dir", type=str, default="./videos/", help="ダウンロードしたファイルを保存するディレクトリ"
+    "--download_save_dir", type=str, default="./videos/", help="ダウンロードしたファイルを保存するディレクトリ"
 )
 parser.add_argument(
-    "--movie_dir", type=str, default="./videos/", help="映像ファイルが置かれたディレクトリ"
+    "--result_save_dir", type=str, default="./result/", help="生成された合成画像を保存するディレクトリ"
 )
 parser.add_argument("--max_workers", type=int, default=5, help="実行可能タスクの最大数")
+parser.add_argument("--mode", default = "default", choices=['default', 'thread', 'process'], help="実行方法")
 args = parser.parse_args()
 
 # ymlファイルに記述された引数で更新
-# [NEW] コンテクストマネージャー
 with open("./cfg.yml", "r", encoding="utf-8") as handle:
     options_yaml = yaml.load(handle, Loader=yaml.SafeLoader)
 update_args(options_yaml, vars(args))
@@ -33,40 +33,33 @@ args.video_urls = tuple(args.video_urls)
 
 
 @print_time
-def generate_frame_local():
-    """逐次的に実行"""
-    for path in args.video_paths:
-        analyze_local_video(path)
+def generate_keyframes(paths_or_urls: str, mode: str = "default"):
+    if mode == "default":
+        # 逐次的に実行
+        for path_or_url in paths_or_urls:
+            analyze_video(args.result_save_dir, args.download_flg, path_or_url)
 
+    elif mode == "thread":
+        # スレッドベースの非同期実行
+        with ThreadPoolExecutor(max_workers=args.max_workers) as exe:
+            for path_or_url in paths_or_urls:
+                exe.submit(
+                    analyze_video, args.result_save_dir, args.download_flg, path_or_url
+                )
 
-@print_time
-def generate_frame_local_thread():
-    """スレッドベースの非同期実行"""
-    with ThreadPoolExecutor(max_workers=args.max_workers) as exe:
-        for path in args.video_paths:
-            exe.submit(analyze_local_video, path)
-
-
-@print_time
-def generate_frame_local_process():
-    """プロセスベースの非同期実行"""
-    with ProcessPoolExecutor(max_workers=args.max_workers) as exe:
-        for path in args.video_paths:
-            exe.submit(analyze_local_video, path)
+    elif mode == "process":
+        # プロセスベースの非同期実行
+        with ProcessPoolExecutor(max_workers=args.max_workers) as exe:
+            for path_or_url in paths_or_urls:
+                exe.submit(
+                    analyze_video, args.result_save_dir, args.download_flg, path_or_url
+                )
+    else:
+        print(f"{mode}: This Mode doesn't exist")
 
 
 if args.download_flg:
-    # 保存先を登録
-    VideoDownloader.set_save_dir(args.save_dir)
-
-    with ThreadPoolExecutor(max_workers=args.max_workers) as exe:
-        for url in args.video_urls:
-            exe.submit(analyze_net_video, url)
+    VideoDownloader.set_save_dir(args.download_save_dir)
+    generate_keyframes(args.video_urls, mode=args.mode)
 else:
-    # 速度比較
-    generate_frame_local()  # 14.31s
-    # generate_frame_local_thread()   # 4.88s
-    # generate_frame_local_process()      # 9.1s
-
-# async await
-# 高速化(numba)
+    generate_keyframes(args.video_paths, mode=args.mode)
