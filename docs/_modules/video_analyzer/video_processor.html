@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="jp" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>video_analyzer.video_processor &mdash; video-analyzer  documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> video-analyzer
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../video_analyzer.html">video_analyzer package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">video-analyzer</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">video_analyzer.video_processor</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for video_analyzer.video_processor</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">yt_dlp</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Generator</span>
+<span class="kn">from</span> <span class="nn">yt_dlp</span> <span class="kn">import</span> <span class="n">YoutubeDL</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">print_time_arg</span><span class="p">,</span> <span class="n">print_time_arg_return</span>
+
+
+<div class="viewcode-block" id="VideoProcessor"><a class="viewcode-back" href="../../video_analyzer.html#video_analyzer.video_processor.VideoProcessor">[docs]</a><span class="k">class</span> <span class="nc">VideoProcessor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;映像処理に関するクラス&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">video_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">result_save_dir</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;./result/&quot;</span><span class="p">,</span>
+        <span class="n">resize_ratio</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.4</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            video_path (str): 映像ファイルのパス名</span>
+<span class="sd">            result_save_dir (str): 処理結果を保存するパス名</span>
+<span class="sd">            resize_ratio (float): 画像リサイズ比 - 計算負荷を抑えるため</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_video_path</span> <span class="o">=</span> <span class="n">video_path</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_video_name</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">splitext</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">video_path</span><span class="p">))[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span>
+            <span class="o">-</span><span class="mi">1</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_result_save_dir</span> <span class="o">=</span> <span class="n">result_save_dir</span>
+
+        <span class="c1"># 画像リサイズ関連</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resize_ratio</span> <span class="o">=</span> <span class="n">resize_ratio</span>  <span class="c1"># リサイズ比率</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_w</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># リサイズ後の幅</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_h</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># リサイズ後の高さ</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_resize_frame</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">img</span><span class="p">:</span> <span class="n">cv2</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_new_w</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_h</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_load_video</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoCapture</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;OpenCVライブラリを用いて映像を読み込む</span>
+<span class="sd">        Return:</span>
+<span class="sd">            cap (cv2.VideoCapture): 映像キャプチャ情報</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cap</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">VideoCapture</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_video_path</span><span class="p">)</span>
+
+        <span class="c1"># 例外処理</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">cap</span><span class="o">.</span><span class="n">isOpened</span><span class="p">():</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed: open video file&quot;</span><span class="p">)</span>
+            <span class="n">exit</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_w</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FRAME_WIDTH</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resize_ratio</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_new_h</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">cap</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">CAP_PROP_FRAME_HEIGHT</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resize_ratio</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">cap</span>
+
+    <span class="k">def</span> <span class="nf">_calc_hist</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">img</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;ヒストグラムを計算</span>
+<span class="sd">        Args:</span>
+<span class="sd">            img (ndarray): 画像情報(3チャンネル)</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            hist (ndarray): ヒストグラム(1チャンネル)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">hist</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">NDArray</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">]</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">calcHist</span><span class="p">([</span><span class="n">img</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">,</span> <span class="p">[</span><span class="mi">256</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">256</span><span class="p">])</span>
+        <span class="n">hist</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">hist</span><span class="p">,</span> <span class="n">hist</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">hist</span></div>
+
+
+<div class="viewcode-block" id="KeyframeExtractor"><a class="viewcode-back" href="../../video_analyzer.html#video_analyzer.video_processor.KeyframeExtractor">[docs]</a><span class="k">class</span> <span class="nc">KeyframeExtractor</span><span class="p">(</span><span class="n">VideoProcessor</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;キーフレーム抽出のクラス&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">video_path</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">result_save_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">synth_frame_columns</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">6</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            video_path (str): 映像ファイルのパス名</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">video_path</span><span class="p">,</span> <span class="n">result_save_dir</span><span class="p">)</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_result_save_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="s2">&quot;True&quot;</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_synth_frame_columns</span> <span class="o">=</span> <span class="n">synth_frame_columns</span>  <span class="c1"># 合成画像の列数</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_keyframes_num</span> <span class="o">=</span> <span class="mi">0</span>  <span class="c1"># キーフレーム数</span>
+
+    <span class="k">def</span> <span class="nf">_extract_keyframes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">threshold</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Generator</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;ヒストグラムを用いたキーフレーム抽出</span>
+<span class="sd">        ヒストグラム差分を計算し、その差分がしきい値以上ならばキーフレームとする</span>
+<span class="sd">        Args:</span>
+<span class="sd">            threshold (float): しきい値</span>
+
+<span class="sd">        Yield:</span>
+<span class="sd">            keyframes (list): キーフレーム情報リスト</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">cap</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_load_video</span><span class="p">()</span>
+        <span class="n">keyframes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">ret</span><span class="p">,</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+        <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resize_frame</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+        <span class="n">keyframes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>  <span class="c1"># 1フレーム目は必ずキーフレーム</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_keyframes_num</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="n">prev_hist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_hist</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="n">ret</span><span class="p">,</span> <span class="n">frame</span> <span class="o">=</span> <span class="n">cap</span><span class="o">.</span><span class="n">read</span><span class="p">()</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">ret</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">frame</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_resize_frame</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+            <span class="n">cur_hist</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_calc_hist</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+            <span class="n">hist_diff</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">compareHist</span><span class="p">(</span><span class="n">prev_hist</span><span class="p">,</span> <span class="n">cur_hist</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">HISTCMP_BHATTACHARYYA</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">hist_diff</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">:</span>
+                <span class="n">keyframes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">frame</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_keyframes_num</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="n">prev_hist</span> <span class="o">=</span> <span class="n">cur_hist</span>
+
+                <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_keyframes_num</span> <span class="o">%</span> <span class="bp">self</span><span class="o">.</span><span class="n">_synth_frame_columns</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="k">yield</span> <span class="n">keyframes</span>
+                    <span class="n">keyframes</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 初期化</span>
+        <span class="n">cap</span><span class="o">.</span><span class="n">release</span><span class="p">()</span>
+        <span class="k">yield</span> <span class="n">keyframes</span>
+
+    <span class="nd">@print_time_arg</span><span class="p">(</span><span class="s2">&quot;extract-keyframe&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">generate_synth_keyframe</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;合成キーフレーム画像を生成&quot;&quot;&quot;</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;generate synthesized keyframe:</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_video_path</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="n">synth_img</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="k">for</span> <span class="n">frames</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_keyframes</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">synth_img</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">synth_img</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">hconcat</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">)</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_synth_frame_columns</span><span class="p">:</span>
+                    <span class="n">frames</span> <span class="o">+=</span> <span class="p">[</span>
+                        <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_new_h</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_new_w</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">)</span>
+                        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_synth_frame_columns</span> <span class="o">-</span> <span class="nb">len</span><span class="p">(</span><span class="n">frames</span><span class="p">))</span>
+                    <span class="p">]</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">synth_img</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">vconcat</span><span class="p">([</span><span class="n">synth_img</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">hconcat</span><span class="p">(</span><span class="n">frames</span><span class="p">)])</span>
+                <span class="k">except</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error: Concat Image&quot;</span><span class="p">)</span>
+        <span class="n">cv2</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_result_save_dir</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">_video_name</span> <span class="o">+</span> <span class="s2">&quot;.jpg&quot;</span><span class="p">,</span> <span class="n">synth_img</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="VideoDownloader"><a class="viewcode-back" href="../../video_analyzer.html#video_analyzer.video_processor.VideoDownloader">[docs]</a><span class="k">class</span> <span class="nc">VideoDownloader</span><span class="p">:</span>
+    <span class="n">download_save_dir</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>  <span class="c1"># ダウンロード保存先</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">video_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            video_url (str): ダウンロードしたい映像ファイルのurl</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">video_name</span> <span class="o">=</span> <span class="n">video_url</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;/&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">video_path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">download_save_dir</span> <span class="o">+</span> <span class="n">video_name</span> <span class="o">+</span> <span class="s2">&quot;.mp4&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_video_url</span> <span class="o">=</span> <span class="n">video_url</span>
+
+    <span class="nd">@print_time_arg_return</span><span class="p">(</span><span class="s2">&quot;download video&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">video_path</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">is_valid_link</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_video_url</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Don&#39;t donwoload video&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="kc">False</span>
+
+            <span class="n">ydl_opts</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;format&quot;</span><span class="p">:</span> <span class="s2">&quot;best&quot;</span><span class="p">,</span> <span class="s2">&quot;outtmpl&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_path</span><span class="p">}</span>
+            <span class="k">with</span> <span class="n">YoutubeDL</span><span class="p">(</span><span class="n">ydl_opts</span><span class="p">)</span> <span class="k">as</span> <span class="n">ydl</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ydl</span><span class="o">.</span><span class="n">download</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">_video_url</span><span class="p">])</span>
+                <span class="k">except</span> <span class="n">yt_dlp</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">DownloadError</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;don&#39;t exist videos&quot;</span><span class="p">)</span>
+                    <span class="k">return</span> <span class="kc">False</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Download : already completed&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="VideoDownloader.get_video_path"><a class="viewcode-back" href="../../video_analyzer.html#video_analyzer.video_processor.VideoDownloader.get_video_path">[docs]</a>    <span class="k">def</span> <span class="nf">get_video_path</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;映像ファイルのパスを出力&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">video_path</span></div>
+
+<div class="viewcode-block" id="VideoDownloader.is_valid_link"><a class="viewcode-back" href="../../video_analyzer.html#video_analyzer.video_processor.VideoDownloader.is_valid_link">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">is_valid_link</span><span class="p">(</span><span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;YouTubeのURLかどうかを確認(YouTube動画のみダウンロード可能)</span>
+<span class="sd">        Args:</span>
+<span class="sd">            url (str): ダウンロードしたい動画のurl</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span> <span class="k">if</span> <span class="n">url</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;https://youtu.be&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="kc">False</span></div>
+
+<div class="viewcode-block" id="VideoDownloader.set_save_dir"><a class="viewcode-back" href="../../video_analyzer.html#video_analyzer.video_processor.VideoDownloader.set_save_dir">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">set_save_dir</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;保存先ディレクトリの設定と作成</span>
+<span class="sd">        Args:</span>
+<span class="sd">            save_dir (str): 保存先ディレクトリ</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">download_save_dir</span> <span class="o">=</span> <span class="n">save_dir</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">save_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div></div>
+
+
+<div class="viewcode-block" id="analyze_video"><a class="viewcode-back" href="../../video_analyzer.html#video_analyzer.video_processor.analyze_video">[docs]</a><span class="k">def</span> <span class="nf">analyze_video</span><span class="p">(</span><span class="n">save_dir</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">download_flg</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">path_or_url</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;映像を分析</span>
+<span class="sd">    Args:</span>
+<span class="sd">        save_dir (str): 生成結果を保存するディレクトリ名</span>
+<span class="sd">        download_flg (bool): ダウンロードするかどうか(True: する, False: しない)</span>
+<span class="sd">        path_or_url (str): 映像ファイルのパス名 or 映像ファイルのURL</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">video_path</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">download_flg</span><span class="p">:</span>
+        <span class="n">vd</span> <span class="o">=</span> <span class="n">VideoDownloader</span><span class="p">(</span><span class="n">path_or_url</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">vd</span><span class="p">():</span>
+            <span class="n">video_path</span> <span class="o">=</span> <span class="n">vd</span><span class="o">.</span><span class="n">get_video_path</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">video_path</span> <span class="o">=</span> <span class="n">path_or_url</span>
+
+    <span class="n">ke</span> <span class="o">=</span> <span class="n">KeyframeExtractor</span><span class="p">(</span><span class="n">video_path</span><span class="p">,</span> <span class="n">save_dir</span><span class="p">)</span>
+    <span class="n">ke</span><span class="o">.</span><span class="n">generate_synth_keyframe</span><span class="p">()</span></div>
+
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;__main__&quot;</span><span class="p">:</span>
+    <span class="kn">import</span> <span class="nn">argparse</span>
+
+    <span class="n">parser</span> <span class="o">=</span> <span class="n">argparse</span><span class="o">.</span><span class="n">ArgumentParser</span><span class="p">(</span><span class="n">description</span><span class="o">=</span><span class="s2">&quot;コマンドライン引数&quot;</span><span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--download_save_dir&quot;</span><span class="p">,</span>
+        <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="s2">&quot;./videos/&quot;</span><span class="p">,</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;ダウンロードしたファイルを保存するディレクトリ&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--result_save_dir&quot;</span><span class="p">,</span> <span class="nb">type</span><span class="o">=</span><span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="o">=</span><span class="s2">&quot;./result/&quot;</span><span class="p">,</span> <span class="n">help</span><span class="o">=</span><span class="s2">&quot;生成された合成画像を保存するディレクトリ&quot;</span>
+    <span class="p">)</span>
+    <span class="n">parser</span><span class="o">.</span><span class="n">add_argument</span><span class="p">(</span>
+        <span class="s2">&quot;--video_urls&quot;</span><span class="p">,</span>
+        <span class="n">default</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;https://youtu.be/DCfk7tc_KqE&quot;</span><span class="p">,),</span>
+        <span class="n">help</span><span class="o">=</span><span class="s2">&quot;ダウンロードしたい動画のURL&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">parser</span><span class="o">.</span><span class="n">parse_args</span><span class="p">()</span>
+
+    <span class="c1"># 保存先を登録</span>
+    <span class="n">VideoDownloader</span><span class="o">.</span><span class="n">set_save_dir</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">download_save_dir</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">url</span> <span class="ow">in</span> <span class="n">args</span><span class="o">.</span><span class="n">video_urls</span><span class="p">:</span>
+        <span class="n">analyze_video</span><span class="p">(</span><span class="n">args</span><span class="o">.</span><span class="n">result_save_dir</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="n">url</span><span class="p">)</span>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, Author.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

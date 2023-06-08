@@ -97,10 +97,10 @@ python -m cProfile {file path}
 
 ```
 # reSTファイルの生成
-sphinx-apidoc -F -H video-analyzer -o docs video_analyzer
+sphinx-apidoc -F -H video-analyzer -o unbuild_docs video_analyzer
 
 # HTML形式のドキュメントを生成
-sphinx-build docs docs/_build
+sphinx-build unbuild_docs docs
 ```
 
 ```
