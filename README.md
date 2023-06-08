@@ -51,6 +51,7 @@ video-analyzer
 |
 ├─assets    # 説明用画像フォルダ
 ├─docs      # Sphinxによるドキュメント
+├─tests      # テストコードフォルダ
 |
 ├─env.yml   # 仮想環境ファイル
 ├─cfg.yml   # コマンドライン引数を指定する設定ファイル
