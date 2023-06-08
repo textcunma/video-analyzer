@@ -62,6 +62,10 @@ video-analyzer
     │  __init__.py          # 初期化用
     └──  __main__.py        # エントリーポイント
 ```
+## ドキュメント
+クラスや関数の引数、返り値を記載（Sphinxによって自動生成）\
+https://textcunma.github.io/video-analyzer/
+
 
 ## 開発環境
 Windows10上で開発、仮想環境はAnacondaを使用。
