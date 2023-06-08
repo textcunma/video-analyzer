@@ -28,7 +28,7 @@
     python -m video_analyzer
 
     # オプション指定例
-    python -m video_analyzer --max_workers 10 --mode 'thread'
+    python -m video_analyzer --max_workers 10 --mode thread
     ```
 
     | オプション名 | デフォルト値 |
@@ -39,7 +39,7 @@
     | --download_save_dir   | "./videos/"  |
     | --result_save_dir   | "./result/"  |
     | --max_workers   | 5  |
-    | --mode   | "default"  |
+    | --mode   | default  |
 
     ※`--mode`オプションは, `default`は逐次実行, `thread`はスレッドベースの非同期実行, `process`はプロセスベースの非同期実行
 
@@ -74,7 +74,7 @@ Windows10上で開発、仮想環境はAnacondaを使用。
 | yt-dlp   | 2023.3.4  |
 詳細は[env.yml](./env.yml)に記載
 
-### その他のコマンド
+### その他: 開発時に利用したコマンド
 ```
 # blackによるコード整形
 python -m black video_analyzer
@@ -101,4 +101,9 @@ sphinx-apidoc -F -H video-analyzer -o docs video_analyzer
 
 # HTML形式のドキュメントを生成
 sphinx-build docs docs/_build
+```
+
+```
+# pytestによるユニットテスト実行
+pytest tests/
 ```

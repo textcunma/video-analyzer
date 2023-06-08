@@ -6,7 +6,7 @@ import numpy.typing as npt
 
 from typing import Generator
 from yt_dlp import YoutubeDL
-from utils import print_time_arg, print_time_arg_return
+from video_analyzer.utils import print_time_arg, print_time_arg_return
 
 
 class VideoProcessor:

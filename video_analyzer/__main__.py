@@ -5,9 +5,9 @@
 import yaml
 import argparse
 
-from utils import update_args, print_time
+from video_analyzer.utils import update_args, print_time
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
-from video_processor import VideoDownloader, analyze_video
+from video_analyzer.video_processor import VideoDownloader, analyze_video
 
 parser = argparse.ArgumentParser(description="コマンドライン引数")
 parser.add_argument("--download_flg", action="store_false", help="ダウンロードするかのフラグ")
