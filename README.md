@@ -87,7 +87,7 @@ python -m black video_analyzer
 
 ```
 # mypyによるコード型チェック
-mupy {file name}
+mypy {file name}
 ```
 
 ```
